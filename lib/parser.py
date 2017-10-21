@@ -4,6 +4,7 @@ import re
 import sys
 import bs4
 import traceback
+import codecs
 
 class TTVPost(object):
 	"""Tang Thu Vien Post class"""
@@ -20,7 +21,7 @@ class TTVParser(object):
 		super(TTVParser, self).__init__()
 
 	@staticmethod
-	def parse_post(tag):
+	def parse_post(tag, parent=None):
 		post = None
 		content = u'<p>Trống rỗng</p>'
 		postno = 0
@@ -38,13 +39,22 @@ class TTVParser(object):
 
 		# Parse post
 		tmp = "post_message_%s" % postno
-		pm = tag.find('div', id=tmp)
+		ftag = tag
+		pm = ftag.find('div', id=tmp)
+		if (not pm) and (parent):
+			# Some time the root is wrong, also find in post parent
+			ftag = parent
+			# print("post %s need to find pm in parent" % postno)
+			pm = ftag.find('div', id=tmp)
 		if not pm:
-			raise Exception("Post %s cannot get post message" % (postno))
+			# with codecs.open("err_post_%s.html" % postno, "w", "utf-8") as fp:
+			# 	fp.write(ftag.prettify())
+			raise Exception("Post %s cannot get post message with id %s" % (postno, tmp))
 
 		title_found = False
-		for div in pm.find_all('div'):
-			m = re.search(r'[cC]h.*ng\s+(\d+)\s*:?(.*)$', tag.text, re.M)
+		for div in pm.find_all('div', attrs={'style': 'text-align: center;'}):
+			# print("---->%s<----" % div.text)
+			m = re.search(r'[cC]h.*ng\s+(\d+)\s*:?(.*)$', div.text, re.M)
 			if m:
 				# print("=====>%s" % (str(m.groups())))
 				title = u"Chương %s: %s" % (m.groups()[0], m.groups()[1])
@@ -52,6 +62,8 @@ class TTVParser(object):
 				title_found = True
 				break;
 		if not title_found:
+			# with codecs.open("err_post_%s.html" % postno, "w", "utf-8") as fp:
+			# 	fp.write(pm.prettify())
 			raise Exception("Post %s can not get chapter title" % (postno))
 
 		# Check if the chapter is existed
@@ -90,7 +102,7 @@ class TTVParser(object):
 		for post_tag in posts_tag:
 			post = None
 			try:
-				post = TTVParser.parse_post(post_tag)
+				post = TTVParser.parse_post(post_tag, soup)
 			except Exception as ex:
 				print("ERR: %s" % (traceback.format_exc()))
 			if post:
