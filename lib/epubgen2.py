@@ -27,6 +27,6 @@ class EpubGenerator(object):
 		self._book.add_chapter(cobj)
 		self._chapters.append(Chapter(cid, title, file_name, cobj))
 
-	def write_book(self, book_file=''):
-		self._book.create_epub(book_file)
+	def write_book(self, book_file='', epub_name='test.epub'):
+		self._book.create_epub(book_file, epub_name)
 
